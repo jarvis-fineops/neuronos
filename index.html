@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuronOS — Your Org's AI Brain</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    /* --- DARK THEME STYLES --- */
+    body {
+      font-family: 'Inter', sans-serif;
+      /* Changed to a dark background */
+      background-color: #1a1d21;
+      /* Changed to a light text color */
+      color: #e0e6f0;
+      display: flex; flex-direction: column; align-items: center; padding: 20px; overflow-x: hidden;
+    }
+    .fade-in-section {
+      opacity: 0; transform: translateY(20px); transition: opacity 1.2s ease-out, transform 1.2s ease-out;
+      text-align: center; margin-bottom: 20px; width: 100%;
+    }
+    .fade-in-section.is-visible { opacity: 1; transform: translateY(0); }
+    h1 { font-size: 3rem; color: #2cb383; margin-bottom: 0.5em; }
+    h2 { font-size: 2rem; color: #53f0ba; margin-bottom: 0.3em; } /* Brighter green for subheadings */
+    p { font-size: 1.2rem; max-width: 700px; color: #b0b8c4; margin: 0 auto; } /* Softer light text for paragraphs */
+    .button {
+      display: inline-block; margin-top: 1.5rem; background: #53f0ba; color: #000;
+      font-weight: bold; padding: 1rem 2rem; border-radius: 8px; text-decoration: none;
+      transition: background 0.3s; font-size: 1.2rem;
+    }
+    .button:hover { background: #2cb383; }
+    #gameText {
+      font-size: 1.5rem; color: #53f0ba; margin-bottom: 20px; min-height: 25px; font-weight: bold;
+    }
+    canvas {
+      display: block; margin: 0 auto; border-radius: 8px;
+      /* Swapped shadow for a subtle glow */
+      box-shadow: 0 0 20px rgba(83, 240, 186, 0.15);
+      border: 1px solid rgba(83, 240, 186, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="fade-in-section" id="intro">
+    <h1>NeuronOS</h1>
+    <p><strong>The AI Brain of Your Company</strong></p>
+  </div>
+  <div class="fade-in-section" id="game-area">
+    <div id="gameText"></div>
+  </div>
+  <div class="fade-in-section" id="cta">
+    <h2>Now What's Stopping You?</h2>
+    <p>Transform your organization with NeuronOS. No chaos. No silos. Just clarity and action.</p>
+    <a class="button" href="#">Book a Demo</a>
+  </div>
+
+  <script>
+    // --- ANIMATION TRIGGER (No changes needed) ---
+    window.addEventListener('load', () => {
+      document.getElementById('intro').classList.add('is-visible');
+      setTimeout(() => document.getElementById('game-area').classList.add('is-visible'), 500);
+    });
+
+    // --- GAME LOGIC (No changes needed, already uses a dark background) ---
+    const issueTexts = [
+      "New hires struggle to ramp up", "Valuable skills go unnoticed", "Coaching is inconsistent",
+      "Too many tools create silos", "No central memory exists", "High performers are overloaded",
+      "Documentation is messy or missing", "Executives make decisions with gaps"
+    ];
+    const benefitTexts = [
+      "Understands People & Skills", "Sees How Teams Feel", "Builds a Living Org Graph",
+      "Suggests Who to Promote or Move", "Helps New Hires Ramp Faster", "Coaches Managers and Teams",
+      "Reduces Tool Fatigue", "Becomes Your Org’s Brain"
+    ];
+
+    let availableIssues = [];
+    let availableBenefits = [];
+
+    let phase = 0;
+    let player;
+    let items = [];
+    let particles = [];
+    let time = 0;
+    let gameTextEl;
+    let screenShake = 0;
+    let bgStars = [];
+
+    function setup() {
+      let canvas = createCanvas(800, 400);
+      canvas.parent('game-area');
+      gameTextEl = document.getElementById('gameText');
+      
+      availableIssues = [...issueTexts];
+      availableBenefits = [...benefitTexts];
+      
+      player = {
+        x: 150, y: height / 2, h: 50, w: 20,
+        isEmpowered: false, glow: 0, speed: 5
+      };
+      
+      for(let i=0; i<100; i++) {
+        bgStars.push({x: random(width), y: random(height), size: random(1, 3), speed: random(0.2, 1)});
+      }
+    }
+
+    function draw() {
+      time += deltaTime / 1000;
+      let bgColor = phase === 0 ? color(20, 25, 40) : color(40, 50, 80);
+      background(bgColor);
+      drawBackgroundStars();
+
+      if (screenShake > 0) {
+        translate(random(-screenShake, screenShake), random(-screenShake, screenShake));
+        screenShake *= 0.9;
+      }
+
+      if (keyIsDown(UP_ARROW) && player.y > player.h / 2) player.y -= player.speed;
+      if (keyIsDown(DOWN_ARROW) && player.y < height - player.h / 2) player.y += player.speed;
+      if (mouseIsPressed && mouseY > 0 && mouseY < height) player.y = mouseY;
+
+      if (phase === 0) {
+        gameTextEl.innerText = 'Without NeuronOS: Your team is overwhelmed...';
+        player.isEmpowered = false;
+        if (random() < 0.025 && items.length < 4) spawnItem(true);
+        if (time > 20) { phase = 1; time = 0; items = []; player.h = 50; }
+      } else if (phase === 1) {
+        gameTextEl.innerText = 'With NeuronOS: Integrate knowledge, gain power!';
+        player.isEmpowered = true;
+        if (random() < 0.025 && items.length < 4) spawnItem(false);
+        if (time > 20) { phase = 2; time = 0; }
+      } else if (phase === 2) {
+        gameTextEl.innerText = 'NeuronOS: Your Organization. Enlightened.';
+        const ctaSection = document.getElementById('cta');
+        if (!ctaSection.classList.contains('is-visible')) ctaSection.classList.add('is-visible');
+        if (time > 5) noLoop();
+      }
+
+      handleItems();
+      drawParticles();
+      drawPlayer();
+    }
+    
+    function spawnItem(isIssue) {
+        let textPool = isIssue ? availableIssues : availableBenefits;
+        if (textPool.length === 0) return;
+        let textIndex = floor(random(textPool.length));
+        let txt = textPool[textIndex];
+        textPool.splice(textIndex, 1);
+        let padding = 15;
+        textSize(14);
+        let textW = textWidth(txt);
+        let boxW = textW > 200 ? 200 : textW + padding * 2;
+        let boxH = textW > 200 ? 60 : 40;
+        items.push({
+            x: width + boxW, y: random(height),
+            w: boxW, h: boxH,
+            text: txt,
+            isIssue: isIssue,
+            speed: random(2, 4)
+        });
+    }
+
+    function handleItems() {
+      for (let i = items.length - 1; i >= 0; i--) {
+        let item = items[i];
+        item.y = lerp(item.y, player.y, 0.04);
+        item.x -= item.speed;
+        drawTextBlock(item);
+        if (player.x + player.w/2 > item.x - item.w/2 &&
+            player.x - player.w/2 < item.x + item.w/2 &&
+            player.y + player.h/2 > item.y - item.h/2 &&
+            player.y - player.h/2 < item.y + item.h/2) {
+          if(item.isIssue) {
+            player.h = max(25, player.h - 5);
+            screenShake = 15;
+            createParticles(item.x, item.y, color(255, 80, 80, 200));
+          } else {
+            player.h += 4;
+            createParticles(item.x, item.y, color(83, 240, 186, 200));
+          }
+          items.splice(i, 1);
+        } else if (item.x < -item.w) {
+          items.splice(i, 1);
+        }
+      }
+    }
+
+    function createParticles(x, y, col) {
+        for(let n=0; n < 10; n++) {
+            particles.push({x:x, y:y, vx:random(-3,3), vy:random(-3,3), size:random(2,5), color:col, alpha:255});
+        }
+    }
+
+    function drawTextBlock(item) {
+        push();
+        let bgColor = item.isIssue ? color(150, 50, 50, 200) : color(40, 160, 120, 200);
+        let strokeColor = item.isIssue ? color(255, 100, 100) : color(83, 240, 186);
+        fill(bgColor);
+        stroke(strokeColor);
+        strokeWeight(2);
+        rectMode(CENTER);
+        rect(item.x, item.y, item.w, item.h, 8);
+        noStroke();
+        fill(255);
+        textAlign(CENTER, CENTER);
+        textSize(14);
+        text(item.text, item.x, item.y, item.w - 10, item.h -10);
+        pop();
+    }
+
+    function drawPlayer() {
+      push();
+      translate(player.x, player.y);
+      if (player.isEmpowered) {
+        player.glow = lerp(player.glow, player.h * 1.5, 0.1);
+        for (let i = player.glow; i > 0; i -= 8) {
+          fill(83, 240, 186, 25); noStroke();
+          ellipse(0, 0, i, i * 1.5);
+        }
+      }
+      stroke(255); strokeWeight(player.h * 0.1);
+      line(0, 0, 0, player.h * 0.4);
+      noStroke(); fill(255);
+      ellipse(0, -player.h * 0.2, player.h * 0.35);
+      stroke(255);
+      let legAngle = player.isEmpowered ? 0.2 : 0.5;
+      line(0, player.h * 0.4, -player.h * legAngle, player.h * 0.4 + player.h * 0.4);
+      line(0, player.h * 0.4, player.h * legAngle, player.h * 0.4 + player.h * 0.4);
+      pop();
+    }
+    
+    function drawBackgroundStars() {
+      for(let star of bgStars) {
+        star.x -= star.speed;
+        if(star.x < 0) { star.x = width; star.y = random(height); }
+        noStroke(); fill(255, 255, 255, 100);
+        ellipse(star.x, star.y, star.size);
+      }
+    }
+
+    function drawParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.alpha -= 5;
+        noStroke(); p.color.setAlpha(p.alpha); fill(p.color);
+        ellipse(p.x, p.y, p.size);
+        if (p.alpha < 0) particles.splice(i, 1);
+      }
+    }
+  </script>
+
+</body>
+</html>
